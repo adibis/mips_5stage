@@ -250,7 +250,7 @@ M__ALUMain ALU_Main (
     .dataA__i       (mux_ALUSrc_A),
     .dataB__i       (mux_ALUSrc),
     .ALUCtrl__i     (ALUCtrl),
-    .data__o        (ALUData_EX),
+    .ALUResult__o   (ALUData_EX),
     .Zero__o        (Zero)
     );
 
