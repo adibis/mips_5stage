@@ -25,7 +25,7 @@ module M__MIPS_5_Stage (
 // ============================================================================
 // ==== Check these signals later. Naming scheme too complicated.
 // ============================================================================
-wire    Branch_Zero, PCWrite, IFIDWrite, Stall, Branch, Branch_Taken, Zero;
+wire    BranchZero, PCWrite, IFIDWrite, Stall, Branch, Branch_Taken, Zero;
 wire    RegDst_ID, MemRead_ID, MemToReg_ID, MemWrite_ID, ALUSrc_ID, RegWrite_ID;
 wire    RegDst_EX, MemRead_EX, MemToReg_EX, MemWrite_EX, ALUSrc_EX, RegWrite_EX;
 wire    MemRead_MEM, MemToReg_MEM, MemWrite_MEM, RegWrite_MEM;
@@ -42,11 +42,22 @@ wire    [31:0]  PC_Four_IF, PC_Four_ID, PC_Offset, Mux_Branch, PCntr, Instr_IF, 
                 ALUResult_WB;
 
 assign Data_Offset = Immediate_ID << 2;
-assign Branch_Zero = Branch & Branch_Taken;
+assign BranchZero = Branch & BranchTaken;
 
 // ============================================================================
 // ==== END ==== Check these signals later. Naming scheme too complicated.
 // ============================================================================
+
+// Program Control Signals
+wire    BranchZero, BranchTaken, Branch, Zero, Stall;
+wire    RegDst_ID, Branch_ID, MemRead_ID, MemToReg_ID, ALUOp_ID,
+                        MemWrite_ID, ALUSrc_ID, RegWrite_ID;
+wire    RegDst_EX, MemRead_EX, MemToReg_EX, ALUOp_EX,
+                        MemWrite_EX, ALUSrc_EX, RegWrite_EX;
+wire    MemRead_MEM, MemToReg_MEM, MemWrite_MEM, RegWrite_MEM;
+wire    MemToReg_WB, RegWrite_WB;
+
+// Muxed output signals
 
 /*
  * ============================================================================
@@ -57,7 +68,7 @@ assign Branch_Zero = Branch & Branch_Taken;
 M__Mux2Mbit MUX_Branch #(.WIDTH(32)) (
     .dataA__i      (ProgramCounter_4_IF),
     .dataB__i      (ProgramCounterOffset_IF),
-    .select__i     (BranchZero_IF),
+    .select__i     (BranchZero),
     .data__o       (BranchMuxResult_IF)
     );
 
@@ -66,7 +77,7 @@ M__ProgramCounter Program_Counter (
     .reset_n__i     (reset_n__i),
     .address__i     (BranchMuxResult_IF),
     .address__o     (ProgramCounter_IF),
-    .pcWrite__i     ()
+    .pcWrite__i     ((~Stall))
     );
 
 M__Adder PC_Add_4 (
@@ -83,8 +94,8 @@ M__Adder PC_Add_4 (
 M__IFID_Reg IFID_Reg (
     .clock__i       (clock__i),
     .reset_n__i     (reset_n__i),
-    .hazard__i      (),
-    .flush__i       (),
+    .hazard__i      ((~Stall)),
+    .flush__i       (BranchZero),
     .PC_4__i        (ProgramCounter_4_IF),
     .instr__i       (Instruction_IF),
     .PC_4__o        (ProgramCounter_4_ID),
@@ -99,7 +110,7 @@ M__IFID_Reg IFID_Reg (
 
 M__Adder PC_Add_Offset (
     .dataA__i       (ProgramCounter_4_ID),
-    .dataB__i       (Offset),
+    .dataB__i       ((Instruction_ID[15:0] << 2)),
     .data__o        (ProgramCounterOffset_IF)
     );
 
@@ -118,7 +129,7 @@ M__CPUControl CPU_Control (
 M__Mux2Mbit Control_Stall #(.WIDTH(10)) (
     .dataA__i       (10'b0),
     .dataB__i       (CtrlCode),
-    .select__i      (),
+    .select__i      (Stall),
     .data__o        ({RegDst_ID, Branch_ID, MemRead_ID, MemToReg_ID, ALUOp_ID,
                         MemWrite_ID, ALUSrc_ID, RegWrite_ID})
     );
@@ -128,25 +139,25 @@ M__RegFile Reg_File (
     .RegWrite__i    (RegWrite_WB)
     .AddrRs__i      (Instruction_ID[25:21]),
     .AddrRt__i      (Instruction_ID[20:16]),
-    .AddrRd__i      (Mux_RegDst_WB),
-    .DataRd__i      (),
+    .AddrRd__i      (mux_RegDst_WB),
+    .DataRd__i      (mux_MemToRegData),
     .DataRs__o      (RegRsData_ID),
     .DataRt__o      (RegRtData_ID),
     );
 
 M__Mux3Mbit Mux_A_EQ #(.WIDTH(32)) (
     .dataA__i       (RegRsData_ID),
-    .dataB__i       (),
-    .dataC__i       (ALUResult_MEM),
-    .select__i      (Select_ForvAALU),
+    .dataB__i       (mux_MemToRegData),
+    .dataC__i       (ALUData_MEM),
+    .select__i      (ALUForv_A),
     .data__o        (Mux_A_Equ)
     );
 
 M__Mux3Mbit Mux_B_EQ #(.WIDTH(32)) (
     .dataA__i       (RegRtData_ID),
-    .dataB__i       (),
-    .dataC__i       (ALUResult_MEM),
-    .select__i      (Select_ForvBALU),
+    .dataB__i       (mux_MemToRegData),
+    .dataC__i       (ALUData_MEM),
+    .select__i      (ALUForv_B),
     .data__o        (Mux_B_Equ)
     );
 
@@ -200,47 +211,47 @@ M__IDEX_Reg ID_EX_Reg (
  */
 
 M__Mux2Mbit Mux_RegDst #(.WIDTH(5)) (
-    .dataA__i       (),
-    .dataB__i       (),
-    .select__i      (),
-    .data__o        ()
-    );
-
-M__Mux2Mbit Mux_ALUSrc #(.WIDTH(32)) (
-    .dataA__i       (),
-    .dataB__i       (),
-    .select__i      (),
-    .data__o        ()
+    .dataA__i       (Instruction_EX[20:16]),
+    .dataB__i       (Instruction_EX[15:11]),
+    .select__i      (RegDst_EX),
+    .data__o        (mux_RegDst_EX)
     );
 
 M__Mux3Mbit Mux_A_ALU #(.WIDTH(32)) (
-    .dataA__i       (),
-    .dataB__i       (),
-    .dataC__i       (),
-    .select__i      (),
-    .data__o        ()
+    .dataA__i       (RegRsData_EX),
+    .dataB__i       (mux_MemToRegData),
+    .dataC__i       (ALUData_MEM),
+    .select__i      (ALUForv_A),
+    .data__o        (mux_ALUSrc_A)
     );
 
 M__Mux3Mbit Mux_B_ALU #(.WIDTH(32)) (
-    .dataA__i       (),
-    .dataB__i       (),
-    .dataC__i       (),
-    .select__i      (),
-    .data__o        ()
+    .dataA__i       (RegRtData_EX),
+    .dataB__i       (mux_MemToRegData),
+    .dataC__i       (ALUData_MEM),
+    .select__i      (ALUForv_B),
+    .data__o        (mux_ALUSrc_B)
+    );
+
+M__Mux2Mbit Mux_ALUSrc #(.WIDTH(32)) (
+    .dataA__i       (mux_ALUSrc_B),
+    .dataB__i       (Immediate_EX),
+    .select__i      (ALUSrc_EX),
+    .data__o        (mux_ALUSrc)
     );
 
 M__ALUControl ALU_Control (
-    .ALUFunction__i (),
-    .ALUOp__i       (),
-    .ALUCtrl__o     ()
+    .ALUFunction__i (Immediate_EX[5:0]),
+    .ALUOp__i       (ALUOp_EX),
+    .ALUCtrl__o     (ALUCtrl)
     );
 
 M__ALUMain ALU_Main (
-    .dataA__i       (),
-    .dataB__i       (),
-    .ALUControl__i  (),
-    .data__o        (),
-    .Zero__o        ()
+    .dataA__i       (mux_ALUSrc_A),
+    .dataB__i       (mux_ALUSrc),
+    .ALUControl__i  (ALUCtrl),
+    .data__o        (ALUData_EX),
+    .Zero__o        (Zero)
     );
 
 M__EXMEM_Reg EX_MEM_Reg (
@@ -252,14 +263,14 @@ M__EXMEM_Reg EX_MEM_Reg (
     .MemWrite__i    (MemWrite_EX),
     .ALUData__i     (ALUData_EX),
     .MemWriteData__i(MemWriteData_EX),
-    .WBReg__i       (WBReg_EX),
+    .WBReg__i       (mux_RegDst_EX),
 
     .RegWrite__o    (RegWrite_MEM),
     .MemToReg__o    (MemToReg_MEM),
     .MemRead__o     (MemRead_MEM),
     .MemWrite__o    (MemWrite_MEM),
     .ALUData__o     (ALUData_MEM),
-    .MemWriteData__o(MemWriteData_MEM),
+    .MemWriteData__o(memDataWrite__o),
     .WBReg__o       (WBReg_MEM)
     );
 
@@ -283,7 +294,7 @@ M__MEMWB_Reg MEM_WB_Reg (
     .reset_n__i     (reset_n__i),
     .RegWrite__i    (RegWrite_MEM),
     .MemToReg__i    (MemToReg_MEM),
-    .MemReadData__i (MemReadData_MEM),
+    .MemReadData__i (memDataRead__i),
     .ALUData__i     (ALUData_MEM),
     .WBReg__i       (WBReg_MEM),
 
@@ -291,7 +302,7 @@ M__MEMWB_Reg MEM_WB_Reg (
     .MemToReg__o    (MemToReg_WB),
     .MemReadData__o (MemReadData_WB),
     .ALUData__o     (ALUData_WB),
-    .WBReg__o       (WBReg_WB)
+    .WBReg__o       (mux_RegDst_WB)
     );
 
 /*
@@ -304,7 +315,7 @@ M__Mux2Mbit Mux_MemToReg #(.WIDTH(32)) (
     .dataA__i       (ALUData_WB),
     .dataB__i       (MemReadData_WB),
     .select__i      (MemToReg_WB),
-    .data__o        ()
+    .data__o        (mux_MemToRegData)
     );
 
 /*
@@ -318,15 +329,15 @@ M__ForwardingUnit Forwarding_Unit (
     .IFID_RegRt__i      (Instruction_ID[20:16]),
     .IDEX_RegRs__i      (Instruction_EX[25:21]),
     .IDEX_RegRt__i      (Instruction_EX[20:16]),
-    .EXMEM_RegRd__i     (RegWrite_MEM),
-    .MEMWB_RegRd__i     (),
-    .EXMEM_RegWrite__i  (),
-    .MEMWB_RegWrite__i  (),
-    .Branch__i          (),
-    .ALUForvA__o        (),
-    .ALUForvB__o        (),
-    .EQUForvA__o        (),
-    .EQUForvB__o        ()
+    .EXMEM_RegRd__i     (WBReg_MEM),
+    .MEMWB_RegRd__i     (mux_RegDst_WB),
+    .EXMEM_RegWrite__i  (RegWrite_MEM),
+    .MEMWB_RegWrite__i  (RegWrite_WB),
+    .Branch__i          (Branch),
+    .ALUForvA__o        (ALUForv_A),
+    .ALUForvB__o        (ALUForv_B),
+    .EQUForvA__o        (EQUForv_A),
+    .EQUForvB__o        (EQUForv_B)
     );
 
 /*
@@ -337,13 +348,13 @@ M__ForwardingUnit Forwarding_Unit (
 
 M__HazardDetect Hazard_Detect (
     .clock__i           (clock__i),
-    .IDEX_MemRead__i    (),
-    .IDEX_RegWrite__i   (),
-    .Branch__i          (),
-    .IFID_RegRs__i      (),
-    .IFID_RegRt__i      (),
-    .IDEX_RegRd__i      (),
-    .Stall__o           ()
+    .IDEX_MemRead__i    (MemRead_EX),
+    .IDEX_RegWrite__i   (RegWrite_EX),
+    .Branch__i          (CtrlCode[8]),
+    .IFID_RegRs__i      (Instruction_ID[25:21]),
+    .IFID_RegRt__i      (Instruction_ID[20:16]),
+    .IDEX_RegRd__i      (mux_RegDst_EX),
+    .Stall__o           (Stall)
     );
 
 endmodule : M__MIPS_5_Stage
