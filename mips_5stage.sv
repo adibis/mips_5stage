@@ -125,72 +125,72 @@ M__Mux2Mbit Control_Stall #(.WIDTH(10)) (
 
 M__RegFile Reg_File (
     .clock__i       (clock__i),
-    .RegWrite__i    ()
+    .RegWrite__i    (RegWrite_WB)
     .AddrRs__i      (Instruction_ID[25:21]),
     .AddrRt__i      (Instruction_ID[20:16]),
-    .AddrRd__i      (),
+    .AddrRd__i      (Mux_RegDst_WB),
     .DataRd__i      (),
-    .DataRs__o      (),
-    .DataRt__o      (),
+    .DataRs__o      (RegRsData_ID),
+    .DataRt__o      (RegRtData_ID),
     );
 
 M__Mux3Mbit Mux_A_EQ #(.WIDTH(32)) (
-    .dataA__i       (),
+    .dataA__i       (RegRsData_ID),
     .dataB__i       (),
-    .dataC__i       (),
-    .select__i      (),
-    .data__o        ()
+    .dataC__i       (ALUResult_MEM),
+    .select__i      (Select_ForvAALU),
+    .data__o        (Mux_A_Equ)
     );
 
 M__Mux3Mbit Mux_B_EQ #(.WIDTH(32)) (
-    .dataA__i       (),
+    .dataA__i       (RegRtData_ID),
     .dataB__i       (),
-    .dataC__i       (),
-    .select__i      (),
-    .data__o        ()
+    .dataC__i       (ALUResult_MEM),
+    .select__i      (Select_ForvBALU),
+    .data__o        (Mux_B_Equ)
     );
 
 M__EqualityCheck EqualityCheck #(.WIDTH(32)) (
-    .dataA__i       (),
-    .dataB__i       (),
-    .data__o        ()
+    .dataA__i       (Mux_A_Equ),
+    .dataB__i       (Mux_B_Equ),
+    .data__o        (BranchTaken)
     );
 
 M__SignExtend Sign_Extend #(.WIDTH_I(16), .WIDTH_O(32)) (
-    .data__i        (),
-    .data__o        ()
+    .data__i        (Instruction_ID[15:0]),
+    .data__o        (Immediate_ID)
     );
 
 M__IDEX_Reg ID_EX_Reg (
     .clock__i       (clock__i),
     .reset_n__i     (reset_n__i),
-    .RegWrite__i    (),
-    .MemToReg__i    (),
-    .MemRead__i     (),
-    .MemWrite__i    (),
-    .ALUSrc__i      (),
-    .ALUOp__i       (),
-    .RegDst__i      (),
-    .RegRsData__i   (),
-    .RegRtData__i   (),
-    .Immediate__i   (),
-    .InstrRsAddr__i (),
-    .InstrRtAddr__i (),
-    .InstrRdAddr__i (),
+    .RegWrite__i    (RegWrite_ID),
+    .MemToReg__i    (MemToReg_ID),
+    .MemRead__i     (MemRead_ID),
+    .MemWrite__i    (MemWrite_ID),
+    .ALUSrc__i      (ALUSrc_ID),
+    .ALUOp__i       (ALUOp_ID),
+    .RegDst__i      (RegDst_ID),
+    .RegRsData__i   (RegRsData_ID),
+    .RegRtData__i   (RegRtData_ID),
+    .Immediate__i   (Immediate_ID),
+    .InstrRsAddr__i (Instruction_ID[25:21]),
+    .InstrRtAddr__i (Instruction_ID[20:16]),
+    .InstrRdAddr__i (Instruction_ID[15:11]),
 
-    .RegWrite__o    (),
-    .MemToReg__o    (),
-    .MemRead__o     (),
-    .MemWrite__o    (),
-    .ALUSrc__o      (),
-    .ALUOp__o       (),
-    .RegDst__o      (),
-    .RegRsData__o   (),
-    .RegRtData__o   (),
-    .Immediate__o   (),
-    .InstrRsAddr__o (),
-    .InstrRtAddr__o (),
-    .InstrRdAddr__o ()
+    .RegWrite__o    (RegWrite_EX),
+    .MemToReg__o    (MemToReg_EX),
+    .MemRead__o     (MemRead_EX),
+    .MemWrite__o    (MemWrite_EX),
+    .ALUSrc__o      (ALUSrc_EX),
+    .ALUOp__o       (ALUOp_EX),
+    .RegDst__o      (RegDst_EX),
+    .RegRsData__o   (RegRsData_EX),
+    .RegRtData__o   (RegRtData_EX),
+    .Immediate__o   (Immediate_EX),
+    .InstrRsAddr__o (Instruction_EX[25:21]),
+    .InstrRtAddr__o (Instruction_EX[20:16]),
+    .InstrRdAddr__o (Instruction_EX[15:11])
     );
 
 /*
@@ -246,21 +246,21 @@ M__ALUMain ALU_Main (
 M__EXMEM_Reg EX_MEM_Reg (
     .clock__i       (clock__i),
     .reset_n__i     (reset_n__i),
-    .RegWrite__i    (),
-    .MemToReg__i    (),
-    .MemRead__i     (),
-    .MemWrite__i    (),
-    .ALUData__i     (),
-    .MemWriteData__i(),
-    .WBReg__i       (),
+    .RegWrite__i    (RegWrite_EX),
+    .MemToReg__i    (MemToReg_EX),
+    .MemRead__i     (MemRead_EX),
+    .MemWrite__i    (MemWrite_EX),
+    .ALUData__i     (ALUData_EX),
+    .MemWriteData__i(MemWriteData_EX),
+    .WBReg__i       (WBReg_EX),
 
-    .RegWrite__o    (),
-    .MemToReg__o    (),
-    .MemRead__o     (),
-    .MemWrite__o    (),
-    .ALUData__o     (),
-    .MemWriteData__o(),
-    .WBReg__o       ()
+    .RegWrite__o    (RegWrite_MEM),
+    .MemToReg__o    (MemToReg_MEM),
+    .MemRead__o     (MemRead_MEM),
+    .MemWrite__o    (MemWrite_MEM),
+    .ALUData__o     (ALUData_MEM),
+    .MemWriteData__o(MemWriteData_MEM),
+    .WBReg__o       (WBReg_MEM)
     );
 
 /*
@@ -281,17 +281,17 @@ M__EXMEM_Reg EX_MEM_Reg (
 M__MEMWB_Reg MEM_WB_Reg (
     .clock__i       (clock__i),
     .reset_n__i     (reset_n__i),
-    .RegWrite__i    (),
-    .MemToReg__i    (),
-    .MemReadData__i (),
-    .ALUData__i     (),
-    .WBReg__i       (),
+    .RegWrite__i    (RegWrite_MEM),
+    .MemToReg__i    (MemToReg_MEM),
+    .MemReadData__i (MemReadData_MEM),
+    .ALUData__i     (ALUData_MEM),
+    .WBReg__i       (WBReg_MEM),
 
-    .RegWrite__o    (),
-    .MemToReg__o    (),
-    .MemReadData__o (),
-    .ALUData__o     (),
-    .WBReg__o       ()
+    .RegWrite__o    (RegWrite_WB),
+    .MemToReg__o    (MemToReg_WB),
+    .MemReadData__o (MemReadData_WB),
+    .ALUData__o     (ALUData_WB),
+    .WBReg__o       (WBReg_WB)
     );
 
 /*
@@ -301,9 +301,9 @@ M__MEMWB_Reg MEM_WB_Reg (
  */
 
 M__Mux2Mbit Mux_MemToReg #(.WIDTH(32)) (
-    .dataA__i       (),
-    .dataB__i       (),
-    .select__i      (),
+    .dataA__i       (ALUData_WB),
+    .dataB__i       (MemReadData_WB),
+    .select__i      (MemToReg_WB),
     .data__o        ()
     );
 
@@ -314,11 +314,11 @@ M__Mux2Mbit Mux_MemToReg #(.WIDTH(32)) (
  */
 
 M__ForwardingUnit Forwarding_Unit (
-    .IFID_RegRs__i      (),
-    .IFID_RegRt__i      (),
-    .IDEX_RegRs__i      (),
-    .IDEX_RegRt__i      (),
-    .EXMEM_RegRd__i     (),
+    .IFID_RegRs__i      (Instruction_ID[25:21]),
+    .IFID_RegRt__i      (Instruction_ID[20:16]),
+    .IDEX_RegRs__i      (Instruction_EX[25:21]),
+    .IDEX_RegRt__i      (Instruction_EX[20:16]),
+    .EXMEM_RegRd__i     (RegWrite_MEM),
     .MEMWB_RegRd__i     (),
     .EXMEM_RegWrite__i  (),
     .MEMWB_RegWrite__i  (),
