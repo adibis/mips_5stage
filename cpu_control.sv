@@ -39,7 +39,7 @@ module M__CPUControl (
             6'b101011:  combined_control = 10'b0_0_0_0_1_1_0_010; // SW
             6'b100011:  combined_control = 10'b0_0_1_1_0_1_1_010; // LW
             6'b000100:  combined_control = 10'b0_1_0_0_0_0_0_011; // BEQ
-            default:    conbined_control = 10'b0_0_0_0_0_0_0_111; // Invalid opcode
+            default:    combined_control = 10'b0_0_0_0_0_0_0_111; // Invalid opcode
         endcase
 
     assign {RegDst__o, Branch__o, MemRead__o, MemToReg__o, MemWrite__o, ALUSrc__o, RegWrite__o, ALUOp__o} = combined_control;

@@ -45,7 +45,7 @@ module M__ALUControl (
             3'b010:     ALUCtrl__o = 3'b010; // LW/SW/ADDI
             3'b011:     ALUCtrl__o = 3'b110; // BEQ
             3'b100:
-                case (ALU_function)
+                case (ALUFunction__i)
                     6'b100000:  ALUCtrl__o = 3'b010; // ADD
                     6'b100010:  ALUCtrl__o = 3'b110; // SUB
                     6'b100100:  ALUCtrl__o = 3'b000; // AND

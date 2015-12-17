@@ -21,7 +21,7 @@ module M__IFID_Reg (
     );
 
     always @(posedge clock__i or negedge reset_n__i) begin
-        if (~reset_n__i or flush__i) begin  // Reset or flush pipeline
+        if (~reset_n__i || flush__i) begin  // Reset or flush pipeline
             PC_4__o     <= 32'b0;
             instr__o    <= 32'b0;
         end else if (hazard__i) begin       // Hazard detected - stall pipeline

@@ -1,0 +1,17 @@
+./adder.sv
+./equality_check.sv
+./memwb_reg.sv
+./mux_2_mbit.sv
+./mux_3_mbit.sv
+./program_counter.sv
+./sign_extend.sv
+./regfile.sv
+./alu_control.sv
+./alu_main.sv
+./cpu_control.sv
+./forwarding_unit.sv
+./hazard_detect.sv
+./idex_reg.sv
+./ifid_reg.sv
+./exmem_reg.sv
+./mips_5stage.sv
