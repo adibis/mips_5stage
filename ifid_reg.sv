@@ -24,7 +24,7 @@ module M__IFID_Reg (
         if (~reset_n__i or flush__i) begin  // Reset or flush pipeline
             PC_4__o     <= 32'b0;
             instr__o    <= 32'b0;
-        end else if (~hazard__i) begin      // Hazard detected - stall pipeline
+        end else if (hazard__i) begin       // Hazard detected - stall pipeline
             PC_4__o     <= PC_4__o;         // Keep the PC and previous instruction
             instr__o    <= instr__o;
         end else begin

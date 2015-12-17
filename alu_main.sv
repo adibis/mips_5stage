@@ -10,7 +10,7 @@
  *
  *  TODO:
  *           1. Add support for arithmetic and logical shift right and left.
- *           2. Add support for inversion, xor, nand, nor, etc.
+ *           2. Add support for inversion, xor, nand, nor, etc. (In Progress)
  *           3. Add support for immediate subtraction (subi).
  *           4. Add support for unsigned addition and subtraction.
  *           5. Add support for SLTU (Set less than for unsigned numbers).
@@ -46,6 +46,16 @@ module M__ALUMain (
             3'b001: // OR
             begin
                 ALUResult__o = dataA__i | dataB__i;
+            end
+
+            3'b011: // XOR
+            begin
+                ALUResult__o = dataA__i ^ dataB__i;
+            end
+
+            3'b100: // NOR
+            begin
+                ALUResult__o = ~(dataA__i | dataB__i);
             end
 
             3'b111: // SLT

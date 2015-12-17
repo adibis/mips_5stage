@@ -14,10 +14,12 @@
  *  011          xxxxxx          110         beq (same as sub)
  *  000          xxxxxx          000         andi (same as and)
  *  001          xxxxxx          001         ori (same as or)
+ *  101          xxxxxx          011         xori (same as xor)
  *  100          100000          010         add
  *  100          100010          110         sub
  *  100          100100          000         and
  *  100          100101          001         or
+ *  100          100110          011         xor
  *  100          101010          111         slt
  *
  * TODO:
@@ -48,10 +50,12 @@ module M__ALUControl (
                     6'b100010:  ALUCtrl__o = 3'b110; // SUB
                     6'b100100:  ALUCtrl__o = 3'b000; // AND
                     6'b100101:  ALUCtrl__o = 3'b001; // OR
+                    6'b100111:  ALUCtrl__o = 3'b100; // NOR
                     6'b101010:  ALUCtrl__o = 3'b111; // SLT
+                    6'b100110:  ALUCtrl__o = 3'b011; // XOR
                     default:    ALUCtrl__o = 3'b110; // Invalid function
                 endcase
-            default:    ALUCtrl__o = 3'b110; // Invalid operation
+            3'b101:     ALUCtrl__o = 3'b011; // XORI
         endcase
 
 endmodule : M__ALUControl
